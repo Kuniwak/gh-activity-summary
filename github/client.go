@@ -50,10 +50,17 @@ type Client struct {
 	logger logging.Logger
 }
 
-func NewClient(host, token string, http *http.Client, logger logging.Logger) *Client {
+func NewClient(host, token string, http *http.Client, verbose bool, logger logging.Logger) *Client {
+	var do httptestable.Do
+	if verbose {
+		do = httptestable.NewDebugDo(http.Do, logger)
+	} else {
+		do = httptestable.NewDo(http.Do, logger)
+	}
+
 	return &Client{
 		host:   host,
-		do:     NewDo(httptestable.NewDo(http, logger), token),
+		do:     NewDo(do, token),
 		logger: logger,
 	}
 }

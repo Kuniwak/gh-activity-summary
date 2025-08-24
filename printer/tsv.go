@@ -2,26 +2,34 @@ package printer
 
 import (
 	"io"
-	"time"
+	"strconv"
 
-	"github.com/Kuniwak/gh-activity-summary/github"
+	"github.com/Kuniwak/gh-activity-summary/summary"
 )
 
 var (
 	tab     = []byte{'\t'}
 	newline = []byte{'\n'}
+	header  = []byte("month\tcommits\tissues\tpulls\treviews\trepos")
 )
 
 func NewTSV(w io.Writer) Printer {
-	return func(events []github.Event) error {
-		for _, event := range events {
-			io.WriteString(w, event.ID)
+	return func(summaries []summary.Summary) error {
+		w.Write(header)
+		w.Write(newline)
+
+		for _, summary := range summaries {
+			io.WriteString(w, summary.Month.Format("2006-01"))
 			w.Write(tab)
-			io.WriteString(w, event.CreatedAt.Format(time.RFC3339))
+			io.WriteString(w, strconv.Itoa(summary.CommitsCreated))
 			w.Write(tab)
-			io.WriteString(w, event.Repo.Name)
+			io.WriteString(w, strconv.Itoa(summary.IssuesCreated))
 			w.Write(tab)
-			io.WriteString(w, event.Type)
+			io.WriteString(w, strconv.Itoa(summary.PullRequestsCreated))
+			w.Write(tab)
+			io.WriteString(w, strconv.Itoa(summary.ReviewsCreated))
+			w.Write(tab)
+			io.WriteString(w, strconv.Itoa(summary.RepositoriesCreated))
 			w.Write(newline)
 		}
 		return nil

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"time"
 
 	"github.com/Kuniwak/gh-activity-summary/cli"
 	"github.com/Kuniwak/gh-activity-summary/logging"
@@ -13,6 +14,8 @@ type Options struct {
 	User        string
 	GitHubToken string
 	GitHubHost  string
+	Since       time.Time
+	Until       time.Time
 	Severity    logging.Severity
 	Help        bool
 }
@@ -32,10 +35,14 @@ func ParseOptions(args []string, inout *cli.ProcInout) (*Options, error) {
 	options := &Options{}
 	flags.StringVar(&options.User, "user", "", "GitHub username (required)")
 	flags.StringVar(&options.GitHubHost, "github-host", "api.github.com", "GitHub API host")
+	var since string
+	flags.StringVar(&since, "since", "", "Since date (YYYY-MM-DD)")
+	var until string
+	flags.StringVar(&until, "until", "", "Until date (YYYY-MM-DD)")
 	var debug bool
-	var silent bool
 	flags.BoolVar(&debug, "debug", false, "Debug logging")
-	flags.BoolVar(&silent, "silent", false, "Silent logging")
+	var quiet bool
+	flags.BoolVar(&quiet, "quiet", false, "Quiet logging")
 
 	if err := flags.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -57,11 +64,32 @@ func ParseOptions(args []string, inout *cli.ProcInout) (*Options, error) {
 
 	if debug {
 		options.Severity = logging.SeverityDebug
-	} else if silent {
+	} else if quiet {
 		options.Severity = logging.SeverityError
 	} else {
 		options.Severity = logging.SeverityInfo
 	}
+
+	if since == "" {
+		return nil, errors.New("-since is required")
+	}
+
+	sinceTime, err := time.Parse("2006-01-02", since)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse since: %w", err)
+	}
+	options.Since = sinceTime
+
+	var untilTime time.Time
+	if until == "" {
+		untilTime = time.Now()
+	} else {
+		untilTime, err = time.Parse("2006-01-02", until)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse until: %w", err)
+		}
+	}
+	options.Until = untilTime
 
 	return options, nil
 }

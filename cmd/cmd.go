@@ -8,6 +8,7 @@ import (
 	"github.com/Kuniwak/gh-activity-summary/github"
 	"github.com/Kuniwak/gh-activity-summary/logging"
 	"github.com/Kuniwak/gh-activity-summary/printer"
+	"github.com/Kuniwak/gh-activity-summary/summary"
 )
 
 func MainCommandByArgs(args []string, inout *cli.ProcInout) int {
@@ -32,15 +33,17 @@ func MainCommandByArgs(args []string, inout *cli.ProcInout) int {
 func MainCommandByOptions(opts *Options, inout *cli.ProcInout) error {
 	logger := logging.NewWriterLogger(inout.Stderr, opts.Severity)
 
-	client := github.NewClient(opts.GitHubHost, opts.GitHubToken, http.DefaultClient, logger)
-	events, err := client.Events(opts.User)
+	verbose := opts.Severity == logging.SeverityDebug
+	client := github.NewClient(opts.GitHubHost, opts.GitHubToken, http.DefaultClient, verbose, logger)
+	getSummaryOfMonths := summary.NewGetSummaryOfMonths(summary.NewGetSummaryOfMonth(client))
+	summaries, err := getSummaryOfMonths(opts.User, opts.Since, opts.Until)
 	if err != nil {
-		return fmt.Errorf("failed to fetch events: %w", err)
+		return fmt.Errorf("failed to fetch summaries: %w", err)
 	}
 
 	printer := printer.NewTSV(inout.Stdout)
-	if err := printer(events); err != nil {
-		return fmt.Errorf("failed to print events: %w", err)
+	if err := printer(summaries); err != nil {
+		return fmt.Errorf("failed to print summaries: %w", err)
 	}
 
 	return nil

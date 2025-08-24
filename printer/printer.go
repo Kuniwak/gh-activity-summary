@@ -1,7 +1,7 @@
 package printer
 
 import (
-	"github.com/Kuniwak/gh-activity-summary/github"
+	"github.com/Kuniwak/gh-activity-summary/summary"
 )
 
-type Printer func(events []github.Event) error
+type Printer func(summary []summary.Summary) error
